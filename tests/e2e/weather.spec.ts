@@ -45,6 +45,9 @@ test('fluxo completo: buscar → clima atual → previsão → trocar unidade', 
 
   await page.getByLabel(/buscar cidade/i).fill('Seattle');
   await page.getByRole('button', { name: /buscar/i }).click();
+  await page
+    .getByRole('button', { name: 'Selecionar Seattle, Washington, Estados Unidos' })
+    .click();
 
   await expect(page.getByRole('heading', { name: 'Seattle' })).toBeVisible();
   await expect(page.getByRole('region', { name: /previsão de 5 dias/i })).toBeVisible();
@@ -72,5 +75,8 @@ test('viewport mobile renderiza o fluxo principal', async ({ page }) => {
 
   await page.getByLabel(/buscar cidade/i).fill('Seattle');
   await page.getByRole('button', { name: /buscar/i }).click();
+  await page
+    .getByRole('button', { name: 'Selecionar Seattle, Washington, Estados Unidos' })
+    .click();
   await expect(page.getByRole('heading', { name: 'Seattle' })).toBeVisible();
 });
