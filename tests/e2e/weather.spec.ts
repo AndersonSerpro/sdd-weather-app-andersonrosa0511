@@ -1,4 +1,4 @@
-import { test, expect, type Page } from '@playwright/test';
+import { expect, type Page, test } from '@playwright/test';
 
 const geocoding = {
   results: [
@@ -29,28 +29,53 @@ const forecast = {
     temperature_2m_max: [20, 19, 22, 24, 25],
     temperature_2m_min: [12, 11, 13, 14, 15],
     precipitation_probability_max: [20, 90, 70, 10, 0],
+    wind_speed_10m_max: [18, 22, 14, 12, 16],
   },
 };
 
 async function mockApis(page: Page) {
+  let forecastRequests = 0;
   await page.route('**/geocoding-api.open-meteo.com/**', (route) =>
     route.fulfill({ json: geocoding }),
   );
-  await page.route('**/api.open-meteo.com/**', (route) => route.fulfill({ json: forecast }));
+  await page.route('**/api.open-meteo.com/**', (route) => {
+    forecastRequests += 1;
+    return route.fulfill({ json: forecast });
+  });
+  return () => forecastRequests;
 }
 
 test('fluxo completo: buscar → clima atual → previsão → trocar unidade', async ({ page }) => {
-  await mockApis(page);
+  const getForecastRequests = await mockApis(page);
   await page.goto('/');
 
   await page.getByLabel(/buscar cidade/i).fill('Seattle');
   await page.getByRole('button', { name: /buscar/i }).click();
-  await page
-    .getByRole('button', { name: 'Selecionar Seattle, Washington, Estados Unidos' })
-    .click();
+  const cityResult = page.getByRole('button', {
+    name: 'Selecionar Seattle, Washington, Estados Unidos',
+  });
+  await expect(cityResult).toBeFocused();
+  expect(getForecastRequests()).toBe(0);
+  await cityResult.click();
 
   await expect(page.getByRole('heading', { name: 'Seattle' })).toBeVisible();
-  await expect(page.getByRole('region', { name: /previsão de 5 dias/i })).toBeVisible();
+  const forecastRegion = page.getByRole('region', { name: /previsão de 5 dias/i });
+  await expect(forecastRegion).toBeVisible();
+  const forecastDays = forecastRegion.getByRole('listitem');
+  await expect(forecastDays).toHaveCount(5);
+  const expectedDays = [
+    ['16 Jun', '20°', '12°', '20%', '18 km/h'],
+    ['17 Jun', '19°', '11°', '90%', '22 km/h'],
+    ['18 Jun', '22°', '13°', '70%', '14 km/h'],
+    ['19 Jun', '24°', '14°', '10%', '12 km/h'],
+    ['20 Jun', '25°', '15°', '0%', '16 km/h'],
+  ];
+  for (const [index, expectedValues] of expectedDays.entries()) {
+    for (const expectedValue of expectedValues) {
+      await expect(forecastDays.nth(index)).toContainText(expectedValue);
+    }
+  }
+  expect(getForecastRequests()).toBe(1);
 
   // 0°C exibido; após trocar para °F deve virar 32°.
   await expect(page.getByText('0°').first()).toBeVisible();
@@ -70,7 +95,7 @@ test('estado vazio quando a cidade não existe', async ({ page }) => {
 
 test('viewport mobile renderiza o fluxo principal', async ({ page }) => {
   await mockApis(page);
-  await page.setViewportSize({ width: 375, height: 812 });
+  await page.setViewportSize({ width: 320, height: 812 });
   await page.goto('/');
 
   await page.getByLabel(/buscar cidade/i).fill('Seattle');
@@ -79,4 +104,60 @@ test('viewport mobile renderiza o fluxo principal', async ({ page }) => {
     .getByRole('button', { name: 'Selecionar Seattle, Washington, Estados Unidos' })
     .click();
   await expect(page.getByRole('heading', { name: 'Seattle' })).toBeVisible();
+  const pageWidth = await page.evaluate(() => document.documentElement.scrollWidth);
+  const viewportWidth = await page.evaluate(() => document.documentElement.clientWidth);
+  expect(pageWidth).toBeLessThanOrEqual(viewportWidth);
+});
+
+test('retry recupera forecast após falha sem perder a cidade selecionada', async ({ page }) => {
+  let forecastAttempts = 0;
+  await page.route('**/geocoding-api.open-meteo.com/**', (route) =>
+    route.fulfill({ json: geocoding }),
+  );
+  await page.route('**/api.open-meteo.com/**', (route) => {
+    forecastAttempts += 1;
+    if (forecastAttempts === 1) return route.fulfill({ status: 503, body: 'indisponível' });
+    return route.fulfill({ json: forecast });
+  });
+  await page.goto('/');
+
+  await page.getByLabel(/buscar cidade/i).fill('Seattle');
+  await page.getByRole('button', { name: /buscar/i }).click();
+  await page
+    .getByRole('button', { name: 'Selecionar Seattle, Washington, Estados Unidos' })
+    .click();
+
+  const alert = page.getByRole('alert');
+  await expect(alert).toContainText('Seattle');
+  await page.getByRole('button', { name: /tentar novamente/i }).click();
+
+  await expect(page.getByRole('region', { name: 'Clima atual' })).toBeVisible();
+  expect(forecastAttempts).toBe(2);
+});
+
+test('resposta parcial exibe marcadores sem quebrar a previsão', async ({ page }) => {
+  await page.route('**/geocoding-api.open-meteo.com/**', (route) =>
+    route.fulfill({ json: geocoding }),
+  );
+  await page.route('**/api.open-meteo.com/**', (route) =>
+    route.fulfill({
+      json: {
+        current: { time: '2026-06-16T12:00', temperature_2m: null, weather_code: null },
+        daily: { time: forecast.daily.time, temperature_2m_max: [24] },
+      },
+    }),
+  );
+  await page.goto('/');
+
+  await page.getByLabel(/buscar cidade/i).fill('Seattle');
+  await page.getByRole('button', { name: /buscar/i }).click();
+  await page
+    .getByRole('button', { name: 'Selecionar Seattle, Washington, Estados Unidos' })
+    .click();
+
+  const currentWeather = page.getByRole('region', { name: 'Clima atual' });
+  await expect(currentWeather).toContainText('—');
+  await expect(currentWeather).toContainText('Condição indisponível');
+  await expect(page.getByRole('listitem')).toHaveCount(5);
+  await expect(page.locator('body')).not.toContainText(/NaN|undefined/);
 });

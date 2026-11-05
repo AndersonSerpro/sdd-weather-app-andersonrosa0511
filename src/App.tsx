@@ -16,7 +16,8 @@ import EmptyState from './components/states/EmptyState';
  * Copilot, do briefing à entrega.
  */
 export default function App() {
-  const { status, data, cities, error, query, search, selectCity, retry } = useWeather();
+  const { status, data, cities, selectedCity, error, query, search, selectCity, retry } =
+    useWeather();
   const [unit, setUnit] = useState<Unit>('celsius');
 
   return (
@@ -41,7 +42,10 @@ export default function App() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-5xl space-y-8 px-4 py-8">
+      <main
+        aria-busy={status === 'loading'}
+        className="mx-auto max-w-5xl space-y-8 px-4 py-8"
+      >
         {status === 'idle' && (
           <EmptyState
             title="Busque uma cidade para começar"
@@ -58,7 +62,9 @@ export default function App() {
           />
         )}
 
-        {status === 'error' && error && <ErrorState message={error} onRetry={retry} />}
+        {status === 'error' && error && (
+          <ErrorState message={error} context={selectedCity?.name} onRetry={retry} />
+        )}
 
         {status === 'success' && data && (
           <>
@@ -68,7 +74,7 @@ export default function App() {
         )}
       </main>
 
-      <footer className="py-8 text-center text-sm text-white/40">
+      <footer className="py-8 text-center text-sm text-white/60">
         Dados por{' '}
         <a
           href="https://open-meteo.com/"

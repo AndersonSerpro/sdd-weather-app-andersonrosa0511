@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { searchCities, getWeather, WeatherServiceError } from '../../src/services/weatherService';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { getWeather, searchCities, WeatherServiceError } from '../../src/services/weatherService';
 import type { City } from '../../src/types/weather';
 
 const CITY: City = {
@@ -23,6 +23,7 @@ describe('weatherService', () => {
     vi.restoreAllMocks();
   });
   afterEach(() => {
+    vi.useRealTimers();
     vi.unstubAllGlobals();
   });
 
@@ -61,9 +62,60 @@ describe('weatherService', () => {
       expect(await searchCities('xyzxyz')).toEqual([]);
     });
 
+    it('codifica consultas com acentos e caracteres especiais', async () => {
+      const fetchSpy = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ results: [] }) });
+      vi.stubGlobal('fetch', fetchSpy);
+
+      await searchCities('São Paulo & Lisboa');
+
+      const requestUrl = new URL(fetchSpy.mock.calls[0][0]);
+      expect(requestUrl.searchParams.get('name')).toBe('São Paulo & Lisboa');
+    });
+
+    it('distingue estrutura inválida de busca sem resultados', async () => {
+      vi.stubGlobal('fetch', mockFetchOnce({ results: 'inválido' }));
+
+      await expect(searchCities('Lisboa')).rejects.toMatchObject({
+        name: 'WeatherServiceError',
+      });
+    });
+
     it('lança erro tipado em resposta não-ok', async () => {
       vi.stubGlobal('fetch', mockFetchOnce({}, false));
       await expect(searchCities('Seattle')).rejects.toBeInstanceOf(WeatherServiceError);
+    });
+
+    it('converte timeout de rede em erro recuperável', async () => {
+      vi.useFakeTimers();
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(
+          (_url: string, init?: RequestInit) =>
+            new Promise<Response>((_resolve, reject) => {
+              init?.signal?.addEventListener('abort', () => {
+                reject(new DOMException('Aborted', 'AbortError'));
+              });
+            }),
+        ),
+      );
+
+      const request = searchCities('Lisboa');
+      const rejection = expect(request).rejects.toMatchObject({
+        name: 'WeatherServiceError',
+        message: 'A requisição demorou demais. Tente novamente.',
+      });
+      await vi.advanceTimersByTimeAsync(10_000);
+
+      await rejection;
+    });
+
+    it('converte JSON inválido em erro recuperável', async () => {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue({ ok: true, json: async () => Promise.reject(new Error()) }),
+      );
+
+      await expect(searchCities('Lisboa')).rejects.toBeInstanceOf(WeatherServiceError);
     });
   });
 
@@ -94,12 +146,81 @@ describe('weatherService', () => {
       const data = await getWeather(CITY);
       expect(data.current.temperature).toBe(18);
       expect(data.forecast).toHaveLength(5);
-      // precipitação nula vira 0 (resposta parcial)
-      expect(data.forecast[4].precipitationProbability).toBe(0);
+      expect(data.forecast[4].precipitationProbability).toBeNull();
+      expect(data.forecast[0].windSpeedMax).toBeNull();
+      expect(
+        new URL(String(vi.mocked(fetch).mock.calls[0][0])).searchParams.get('daily'),
+      ).toContain('wind_speed_10m_max');
+    });
+
+    it('preserva campos ausentes como indisponíveis em uma resposta parcial', async () => {
+      vi.stubGlobal(
+        'fetch',
+        mockFetchOnce({
+          current: { time: '2026-06-16T12:00', temperature_2m: null, weather_code: null },
+          daily: {
+            time: ['2026-06-16', '2026-06-17', '2026-06-18', '2026-06-19', '2026-06-20'],
+            temperature_2m_max: [24],
+          },
+        }),
+      );
+
+      const data = await getWeather(CITY);
+
+      expect(data.current.temperature).toBeNull();
+      expect(data.current.humidity).toBeNull();
+      expect(data.current.weatherCode).toBeNull();
+      expect(data.forecast[0]).toMatchObject({
+        max: 24,
+        min: null,
+        weatherCode: null,
+        precipitationProbability: null,
+        windSpeedMax: null,
+      });
     });
 
     it('lança erro quando a resposta está incompleta', async () => {
       vi.stubGlobal('fetch', mockFetchOnce({ current: null, daily: null }));
+      await expect(getWeather(CITY)).rejects.toBeInstanceOf(WeatherServiceError);
+    });
+
+    it('rejeita uma série forecast que não tenha cinco datas', async () => {
+      vi.stubGlobal(
+        'fetch',
+        mockFetchOnce({
+          current: { time: '2026-06-16T12:00' },
+          daily: { time: ['2026-06-16'] },
+        }),
+      );
+
+      await expect(getWeather(CITY)).rejects.toBeInstanceOf(WeatherServiceError);
+    });
+
+    it('rejeita uma série de cinco datas com um dia faltando', async () => {
+      vi.stubGlobal(
+        'fetch',
+        mockFetchOnce({
+          current: { time: '2026-06-16T12:00' },
+          daily: {
+            time: ['2026-06-16', '2026-06-17', '2026-06-19', '2026-06-20', '2026-06-21'],
+          },
+        }),
+      );
+
+      await expect(getWeather(CITY)).rejects.toBeInstanceOf(WeatherServiceError);
+    });
+
+    it('exige que a previsão comece na data local atual', async () => {
+      vi.stubGlobal(
+        'fetch',
+        mockFetchOnce({
+          current: { time: '2026-06-16T12:00' },
+          daily: {
+            time: ['2026-06-17', '2026-06-18', '2026-06-19', '2026-06-20', '2026-06-21'],
+          },
+        }),
+      );
+
       await expect(getWeather(CITY)).rejects.toBeInstanceOf(WeatherServiceError);
     });
   });

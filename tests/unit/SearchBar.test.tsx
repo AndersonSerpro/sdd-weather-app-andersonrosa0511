@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, it, expect, vi } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import SearchBar from '../../src/components/SearchBar';
 
 describe('SearchBar', () => {
@@ -8,6 +8,15 @@ describe('SearchBar', () => {
     const onSearch = vi.fn();
     render(<SearchBar onSearch={onSearch} />);
     await userEvent.click(screen.getByRole('button', { name: /buscar/i }));
+    expect(onSearch).not.toHaveBeenCalled();
+  });
+
+  it('não dispara busca com apenas espaços', async () => {
+    const onSearch = vi.fn();
+    render(<SearchBar onSearch={onSearch} />);
+
+    await userEvent.type(screen.getByLabelText(/buscar cidade/i), '   ');
+    expect(screen.getByRole('button', { name: /buscar/i })).toBeDisabled();
     expect(onSearch).not.toHaveBeenCalled();
   });
 

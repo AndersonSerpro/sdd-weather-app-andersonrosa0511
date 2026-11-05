@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react';
+import { type FormEvent, useEffect, useRef, useState } from 'react';
 import type { City } from '../types/weather';
 
 interface SearchBarProps {
@@ -16,6 +16,11 @@ export default function SearchBar({
   onSelectCity = () => {},
 }: SearchBarProps) {
   const [value, setValue] = useState('');
+  const firstResultRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    if (results.length > 0) firstResultRef.current?.focus();
+  }, [results]);
 
   function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -27,7 +32,7 @@ export default function SearchBar({
   return (
     <div className="w-full max-w-md">
       <form role="search" onSubmit={handleSubmit}>
-        <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 backdrop-blur-md focus-within:border-accent-500">
+        <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 backdrop-blur-md focus-within:border-accent-500 focus-within:outline focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-accent-400">
           <span aria-hidden="true" className="text-white/50">
             🔍
           </span>
@@ -41,7 +46,8 @@ export default function SearchBar({
             onChange={(e) => setValue(e.target.value)}
             placeholder="Buscar cidade…"
             autoComplete="off"
-            className="flex-1 bg-transparent text-white placeholder-white/40 outline-none"
+            disabled={disabled}
+            className="flex-1 bg-transparent text-white placeholder-white/70 outline-none"
           />
           <button
             type="submit"
@@ -61,10 +67,12 @@ export default function SearchBar({
             return (
               <li key={city.id}>
                 <button
+                  ref={city === results[0] ? firstResultRef : undefined}
                   type="button"
                   aria-label={accessibleName}
                   onClick={() => onSelectCity(city)}
-                  className="w-full rounded-lg px-3 py-2 text-left text-white hover:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent-400"
+                  disabled={disabled}
+                  className="w-full rounded-lg px-3 py-2 text-left text-white hover:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-400 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   <span className="font-medium">{city.name}</span>
                   <span className="ml-2 text-sm text-white/60">{location}</span>
