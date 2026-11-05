@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react';
-import type { City, WeatherData } from '../types/weather';
 import { getWeather, searchCities, WeatherServiceError } from '../services/weatherService';
+import type { City, WeatherData } from '../types/weather';
 
 export type WeatherStatus = 'idle' | 'loading' | 'results' | 'success' | 'error' | 'empty';
 
@@ -8,6 +8,7 @@ interface UseWeatherResult {
   status: WeatherStatus;
   data: WeatherData | null;
   cities: City[];
+  selectedCity: City | null;
   error: string | null;
   query: string;
   search: (name: string) => Promise<void>;
@@ -67,6 +68,7 @@ export function useWeather(): UseWeatherResult {
 
   const selectCity = useCallback(
     async (city: City) => {
+      setCities([]);
       await loadWeather(city);
     },
     [loadWeather],
@@ -80,7 +82,7 @@ export function useWeather(): UseWeatherResult {
     }
   }, [lastCity, query, loadWeather, search]);
 
-  return { status, data, cities, error, query, search, selectCity, retry };
+  return { status, data, cities, selectedCity: lastCity, error, query, search, selectCity, retry };
 }
 
 function toMessage(err: unknown): string {
