@@ -47,7 +47,7 @@ export default function SearchBar({
             placeholder="Buscar cidade…"
             autoComplete="off"
             disabled={disabled}
-            className="flex-1 bg-transparent text-white placeholder-white/70 outline-none"
+            className="min-w-0 flex-1 bg-transparent text-white placeholder-white/70 outline-none"
           />
           <button
             type="submit"
