@@ -23,14 +23,14 @@ export default function App() {
   return (
     <div className="min-h-screen text-white">
       <header className="border-b border-white/10">
-        <div className="mx-auto flex max-w-5xl flex-col gap-4 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="mx-auto flex max-w-5xl flex-col gap-4 px-4 py-4 md:flex-row md:items-center md:justify-between">
           <div className="flex items-center gap-2">
             <span aria-hidden="true" className="text-2xl text-sun">
               ☀️
             </span>
             <span className="text-lg font-bold">WeatherView</span>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex w-full flex-col items-start gap-3 md:w-auto md:flex-row md:items-center">
             <SearchBar
               onSearch={search}
               disabled={status === 'loading'}
