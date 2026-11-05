@@ -115,8 +115,7 @@ export async function getWeather(city: City): Promise<WeatherData> {
     longitude: String(city.longitude),
     current:
       'temperature_2m,relative_humidity_2m,wind_speed_10m,surface_pressure,precipitation,weather_code',
-    daily:
-      'weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max',
+    daily: 'weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max',
     forecast_days: '5',
     timezone: 'auto',
   });

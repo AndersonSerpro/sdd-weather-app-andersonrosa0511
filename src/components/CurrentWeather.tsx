@@ -55,21 +55,9 @@ export default function CurrentWeather({ city, current, unit }: CurrentWeatherPr
 
         <div className="grid grid-cols-2 gap-3">
           <Metric icon="💧" label="Umidade" value={`${Math.round(current.humidity)}%`} />
-          <Metric
-            icon="💨"
-            label="Vento"
-            value={`${Math.round(current.windSpeed)} km/h`}
-          />
-          <Metric
-            icon="🌧️"
-            label="Precipitação"
-            value={`${current.precipitation} mm`}
-          />
-          <Metric
-            icon="📊"
-            label="Pressão"
-            value={`${Math.round(current.pressure)} hPa`}
-          />
+          <Metric icon="💨" label="Vento" value={`${Math.round(current.windSpeed)} km/h`} />
+          <Metric icon="🌧️" label="Precipitação" value={`${current.precipitation} mm`} />
+          <Metric icon="📊" label="Pressão" value={`${Math.round(current.pressure)} hPa`} />
         </div>
       </div>
     </section>

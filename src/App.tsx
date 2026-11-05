@@ -16,7 +16,7 @@ import EmptyState from './components/states/EmptyState';
  * Copilot, do briefing à entrega.
  */
 export default function App() {
-  const { status, data, error, query, search, retry } = useWeather();
+  const { status, data, cities, error, query, search, selectCity, retry } = useWeather();
   const [unit, setUnit] = useState<Unit>('celsius');
 
   return (
@@ -30,7 +30,12 @@ export default function App() {
             <span className="text-lg font-bold">WeatherView</span>
           </div>
           <div className="flex items-center gap-3">
-            <SearchBar onSearch={search} disabled={status === 'loading'} />
+            <SearchBar
+              onSearch={search}
+              disabled={status === 'loading'}
+              results={cities}
+              onSelectCity={selectCity}
+            />
             <UnitToggle unit={unit} onChange={setUnit} />
           </div>
         </div>

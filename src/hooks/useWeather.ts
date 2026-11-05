@@ -2,7 +2,7 @@ import { useCallback, useState } from 'react';
 import type { City, WeatherData } from '../types/weather';
 import { getWeather, searchCities, WeatherServiceError } from '../services/weatherService';
 
-export type WeatherStatus = 'idle' | 'loading' | 'success' | 'error' | 'empty';
+export type WeatherStatus = 'idle' | 'loading' | 'results' | 'success' | 'error' | 'empty';
 
 interface UseWeatherResult {
   status: WeatherStatus;
@@ -16,8 +16,8 @@ interface UseWeatherResult {
 }
 
 /**
- * Hook de orquestração: busca cidades, seleciona uma e carrega o clima.
- * Expõe uma máquina de estados simples (idle/loading/success/error/empty).
+ * Hook de orquestração: busca cidades e carrega o clima após seleção explícita.
+ * Expõe os estados de busca e previsão.
  */
 export function useWeather(): UseWeatherResult {
   const [status, setStatus] = useState<WeatherStatus>('idle');
@@ -27,25 +27,24 @@ export function useWeather(): UseWeatherResult {
   const [query, setQuery] = useState('');
   const [lastCity, setLastCity] = useState<City | null>(null);
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: search inicia o fluxo na montagem; loadWeather é estável
   const search = useCallback(async (name: string) => {
     const trimmed = name.trim();
-    setQuery(trimmed);
     if (!trimmed) return;
 
+    setQuery(trimmed);
     setStatus('loading');
     setError(null);
     setCities([]);
+    setData(null);
+    setLastCity(null);
     try {
       const results = await searchCities(trimmed);
       if (results.length === 0) {
         setStatus('empty');
         return;
       }
-      // Seleciona automaticamente a primeira correspondência, mas mantém a
-      // lista para o usuário trocar.
       setCities(results);
-      await loadWeather(results[0]);
+      setStatus('results');
     } catch (err) {
       setStatus('error');
       setError(toMessage(err));

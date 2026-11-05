@@ -4,7 +4,12 @@
 
 ### Treinamento hands-on de **Spec-Driven Development** com **GitHub Copilot**
 
-**Brief → Spec → Plan → Tasks → Code → Test → Review → Ship**
+<pre align="center">
+Thinking → Planning → Decomposing → Building → Testing → Reviewing → Shipping
+                                        ▲ ainda em Building (dados reais)
+</pre>
+
+<p>Esta é a abordagem <strong>design-first</strong>: a IA itera na UI enquanto você guia a visão de produto.</p>
 
 </div>
 
