@@ -40,9 +40,19 @@ export interface ForecastDay {
   windSpeedMax: number | null;
 }
 
+/** Condições por hora no fuso local da cidade. */
+export interface HourlyForecast {
+  time: string;
+  temperature: number | null;
+  weatherCode: number | null;
+  precipitationProbability: number | null;
+  uvIndex: number | null;
+}
+
 /** Agregado entregue à UI: cidade + clima atual + 5 dias de previsão. */
 export interface WeatherData {
   city: City;
   current: CurrentWeather;
   forecast: ForecastDay[];
+  hourly: HourlyForecast[];
 }

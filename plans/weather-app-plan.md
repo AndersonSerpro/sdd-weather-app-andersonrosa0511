@@ -1,3 +1,5 @@
+-  N --> O[UI renderiza clima atual, horários e cinco dias]
+
 # Plano Técnico — Weather App
 
 Este plano deriva da [especificação do produto](../specs/weather-app-spec.md) e orienta as tarefas de implementação. A spec é a fonte de verdade; a estrutura e os testes atuais foram consultados para manter as decisões compatíveis com o projeto existente.
@@ -5,6 +7,8 @@ Este plano deriva da [especificação do produto](../specs/weather-app-spec.md) 
 ## Architecture Overview
 
 A aplicação é uma SPA em React. A camada de apresentação recebe estado e callbacks do hook `useWeather`; o hook orquestra busca, seleção, carregamento e retry; `weatherService` concentra HTTP, validação básica e mapeamento das respostas da Open-Meteo para tipos de domínio. Conversões de unidade e formatação permanecem na camada de apresentação/utilitários, sem nova chamada de rede.
+
+Além dos resultados de geocoding, a composição da tela expõe atalhos locais para Curitiba, Maringá e Matinhos; esses botões entregam objetos `City` conhecidos a `selectCity`, sem executar geocoding.
 
 O fluxo respeita a seleção explícita de cidade definida em RF1: resultados de geocoding são apresentados para desambiguação e a previsão só é solicitada após a pessoa escolher um resultado. O código atual já tem `cities` no hook, mas carrega automaticamente o primeiro resultado e a `SearchBar` não apresenta uma lista selecionável; esse é um gap entre a implementação atual e a spec, não uma mudança de requisito.
 
@@ -29,7 +33,7 @@ Manter a organização já existente, sem introduzir camadas ou estado global de
 
 | Caminho | Responsabilidade |
 | --- | --- |
-| `src/App.tsx` | Compor busca, seletor de unidade e os estados/telas de clima. |
+| `src/App.tsx` | Compor marca, atalhos de cidades, busca, seletor de unidade e os estados/telas de clima. |
 | `src/components/` | UI de busca e seleção, clima atual, lista diária, unidade e estados de loading, erro e vazio. A seleção de resultado deve ser acessível por teclado; pode ser composta na estrutura atual. |
 | `src/components/states/` | Apresentar estados de carregamento, erro recuperável e ausência de dados/resultados. |
 | `src/hooks/useWeather.ts` | Manter estado da busca e coordenar chamadas do serviço, seleção de cidade e retry. |
@@ -76,10 +80,19 @@ export interface ForecastDay {
   windSpeedMax: number | null;
 }
 
+export interface HourlyForecast {
+  time: string; // hora local ISO YYYY-MM-DDTHH:mm
+  temperature: number | null; // Celsius
+  weatherCode: number | null;
+  precipitationProbability: number | null;
+  uvIndex: number | null;
+}
+
 export interface WeatherData {
   city: City;
   current: CurrentWeather;
   forecast: ForecastDay[]; // cinco dias consecutivos, hoje primeiro
+  hourly: HourlyForecast[]; // horários disponíveis para a data local de hoje
 }
 ```
 
@@ -105,6 +118,7 @@ flowchart TD
   L --> M[Mapeamento e validação para WeatherData]
   M --> N[useWeather armazena dados ou erro recuperável]
   N --> O[UI renderiza clima atual e cinco dias]
+  Q[Pessoa seleciona cidade predefinida] --> J
   P[UnitToggle altera Unit local] --> O
 ```
 
@@ -127,6 +141,8 @@ Exemplo abreviado de resposta:
 ```
 
 **Forecast** — `GET https://api.open-meteo.com/v1/forecast`
+
+Adicionar `hourly=temperature_2m,weather_code,precipitation_probability,uv_index`. Filtrar a série horária pela primeira data diária local para obter apenas as horas de hoje; preservar valores ausentes como `null`. A ausência da série horária não invalida current/daily e deve resultar no estado horário indisponível.
 
 Parâmetros: `latitude`, `longitude`, `current=temperature_2m,relative_humidity_2m,wind_speed_10m,surface_pressure,precipitation,weather_code`, `daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,wind_speed_10m_max`, `forecast_days=5`, `timezone=auto` e `temperature_unit=celsius`. `wind_speed_unit` pode ser fixado em `kmh` para manter explícita a unidade já exibida pela UI. `timezone=auto` permite alinhar o início dos cinco dias à data local consultada. Converter para Fahrenheit somente na apresentação.
 
@@ -154,9 +170,13 @@ Referências: RF1–RF3, RF5; RNF de resiliência e publicação.
 
 Manter o estado do domínio de busca em `useWeather`, conforme o padrão atual, sem biblioteca externa. Estado conceitual: `status` (`idle | loading | success | error | empty`), `query`, `cities`, `selectedCity`, `data` e `error`. Separar a lista de resultados da cidade selecionada: resultados não implicam seleção e não disparam forecast até uma escolha explícita (RF1). `retry` repete geocoding quando a busca falhou ou forecast para a cidade escolhida.
 
+Os atalhos usam uma lista constante de `City` com coordenadas fixas para Curitiba (-25.4284, -49.2733), Maringá (-23.4205, -51.9333) e Matinhos (-25.8176, -48.5428); selecionar um atalho chama `selectCity` diretamente.
+Derivar a recomendação das três primeiras horas ainda futuras (comparadas lexicograficamente na timezone local). Aplicar a ordem: chuva com probabilidade ≥50%, UV ≥6, temperatura ≤10 °C; sem condição, exibir a mensagem neutra. A recomendação não é estado persistido nem substitui os dados por hora.
+
 Manter `Unit` como estado local da composição da UI, inicialmente Celsius, e derivar todos os valores apresentados a partir dos dados Celsius existentes. Isso cobre alternância inclusive durante carregamento, sem nova requisição (RF4). Não persistir cidade, unidade ou histórico; persistência está fora do escopo da v1.
 
 Referências: RF1, RF4, RF5; RNF de simplicidade e qualidade.
+Referências: RF1, RF4, RF5, RF7; RNF de simplicidade e qualidade.
 
 ## Error Handling Strategy
 
@@ -182,6 +202,9 @@ Usar `pnpm test` (Vitest) para unitários e componentes, `pnpm test:e2e` (Playwr
 - `weatherService`: construir URLs/parâmetros, codificar consultas, mapear resultados e payload completo, tratar sem resultados, HTTP/rede/timeout e campos parciais, incluindo vento máximo diário.
 - `temperature` e formatadores: conversões determinísticas C/F, formatação pt-BR e valores ausentes.
 - `useWeather`/`App` e componentes: estado inicial, loading, vazio e erro; vários resultados sem auto-seleção; seleção explícita; retry da busca e do forecast; alternância de unidade sem nova chamada de rede; acessibilidade básica por role/label e teclado.
+- `App`: marca “Qual é o tempo?”; cada atalho seleciona a cidade correta e chama forecast sem geocoding.
+- `HourlyForecast`: valida seleção do dia local, tabela acessível, métricas parciais e limite de horas.
+- `weatherSuggestion`: testa os limiares e a prioridade entre chuva, UV, frio e fallback neutro.
 
 **Playwright:**
 
@@ -189,11 +212,13 @@ Usar `pnpm test` (Vitest) para unitários e componentes, `pnpm test:e2e` (Playwr
 - Alternância C/F para temperatura atual e mínima/máxima sem nova requisição (RF4).
 - Nenhum resultado, falha de geocoding, falha de forecast e retry (RF5).
 - Consulta vazia e resultados parciais sem quebra da tela.
+- Seleção de cada cidade predefinida, sem uma requisição de geocoding adicional.
+- Previsão por hora para a data local, recomendação adequada aos próximos dados e ausência de alerta.
 - Layout e operação dos controles em 320 px e em viewport desktop, sem rolagem horizontal; navegação por teclado e foco visível.
 
 Interceptar as APIs nos E2E para resultados determinísticos, como os testes atuais já fazem; cobrir falhas e datasets parciais por fixtures. Executar os gates do projeto: `pnpm lint`, `pnpm build` e `pnpm test`; `pnpm test:e2e` complementa a validação de jornada.
 
-Rastreabilidade: RF1–RF5; RNF de responsividade, acessibilidade, localização e qualidade.
+Rastreabilidade: RF1–RF7; RNF de responsividade, acessibilidade, localização e qualidade.
 
 ## Risks & Trade-offs
 
@@ -218,6 +243,8 @@ Rastreabilidade: RF1–RF5; RNF de responsividade, acessibilidade, localização
 | RF3 | `ForecastDay`, cinco datas locais consecutivas, temperaturas, condição, precipitação e vento máximo diário; fixtures de cinco dias. |
 | RF4 | Unidade local e Celsius como valor de domínio; conversão C/F sem nova chamada, coberta em unitário e E2E. |
 | RF5 | Estados inicial/loading/empty/error, mensagens compreensíveis e retry específico; cenários unitários e E2E. |
+| RF6 | Atalhos de cidade alimentam `selectCity` diretamente, sem geocoding. |
+| RF7 | Série horária local em tabela acessível e recomendação por regra; testes de serviço, limiares e E2E. |
 | RNF — Performance | Feedback durante rede; SPA estática com Vite. |
 | RNF — Responsividade | Mobile-first, teste em 320 px e desktop, sem rolagem horizontal. |
 | RNF — Acessibilidade | Semântica, labels, operação por teclado e foco visível nos controles. |

@@ -14,8 +14,8 @@ export default function EmptyState({ title, hint }: EmptyStateProps) {
       <span aria-hidden="true" className="text-4xl">
         🌍
       </span>
-      <p className="text-white/80">{title}</p>
-      {hint && <p className="text-sm text-white/70">{hint}</p>}
+      <p className="text-ink-700">{title}</p>
+      {hint && <p className="text-sm text-ink-500">{hint}</p>}
     </div>
   );
 }

@@ -16,12 +16,12 @@ interface MetricProps {
 
 function Metric({ icon, label, value }: MetricProps) {
   return (
-    <div className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/5 px-4 py-3 backdrop-blur-md">
+    <div className="flex items-center gap-3 rounded-xl border border-ink-900/10 bg-white/70 px-4 py-3 backdrop-blur-md">
       <span aria-hidden="true" className="text-xl">
         {icon}
       </span>
       <div>
-        <p className="text-xs text-white/70">{label}</p>
+        <p className="text-xs text-ink-500">{label}</p>
         <p className="font-semibold">{value}</p>
       </div>
     </div>
@@ -35,12 +35,12 @@ export default function CurrentWeather({ city, current, unit }: CurrentWeatherPr
   return (
     <section
       aria-label="Clima atual"
-      className="rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur-md shadow-glass md:p-8"
+      className="rounded-2xl border border-white/80 bg-white/65 p-6 shadow-glass backdrop-blur-md md:p-8"
     >
       <div className="flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
         <div>
           <h2 className="text-2xl font-bold md:text-3xl">{city.name}</h2>
-          {location && <p className="text-white/70">{location}</p>}
+          {location && <p className="text-ink-500">{location}</p>}
 
           <div className="mt-6 flex items-center gap-4">
             <span aria-hidden="true" className="text-6xl">
@@ -50,7 +50,7 @@ export default function CurrentWeather({ city, current, unit }: CurrentWeatherPr
               {formatTemperature(current.temperature, unit)}
             </span>
           </div>
-          <p className="mt-2 text-white/70">{getWeatherLabel(current.weatherCode)}</p>
+          <p className="mt-2 text-ink-700">{getWeatherLabel(current.weatherCode)}</p>
         </div>
 
         <div className="grid grid-cols-2 gap-3">

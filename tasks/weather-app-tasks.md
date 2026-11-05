@@ -175,6 +175,20 @@ Este backlog deriva de [specs/weather-app-spec.md](../specs/weather-app-spec.md)
 - **Arquivos prováveis:** Nenhum arquivo de produção; `package.json` apenas se for necessário consultar os comandos existentes.
 - **Tipo:** Test
 
+### T-24 — Renomear a aplicação e adicionar cidades predefinidas
+- **Descrição:** Exibir “Qual é o tempo?” como marca e adicionar atalhos acessíveis para Curitiba, Maringá e Matinhos, carregando o clima diretamente pelas coordenadas locais.
+- **Critérios de aceite:** A marca visível usa o nome solicitado; existem três botões com nomes acessíveis e foco por teclado; ativar cada botão carrega a cidade e coordenadas corretas sem chamar geocoding; busca, toggle de unidade e estados existentes permanecem funcionais.
+- **Dependências:** T-05, T-07.
+- **Arquivos prováveis:** `src/App.tsx`, `tests/unit/App.test.tsx`, `tests/e2e/weather.spec.ts`.
+- **Tipo:** UI
+
+### T-25 — Exibir previsão horária e sugestão prática
+- **Descrição:** Solicitar e mapear as horas do dia local na Open-Meteo, exibi-las em um quadro acessível e destacar uma recomendação baseada nas próximas três horas.
+- **Critérios de aceite:** A série horária é filtrada pela data local da cidade; cada linha mostra hora, condição, temperatura e probabilidade de chuva; dados parciais exibem marcador neutro; a sugestão respeita a prioridade chuva ≥50%, UV ≥6, temperatura ≤10 °C e fallback neutro; testes cobrem limites e os casos de recomendação.
+- **Dependências:** T-04, T-10, T-24.
+- **Arquivos prováveis:** `src/services/weatherService.ts`, `src/types/weather.ts`, `src/components/HourlyForecast.tsx`, `src/components/WeatherSuggestion.tsx`, `src/lib/weatherSuggestion.ts`, `tests/unit/weatherService.test.ts`, `tests/unit/weatherSuggestion.test.ts`, `tests/unit/App.test.tsx`, `tests/e2e/weather.spec.ts`.
+- **Tipo:** UI/Data/Test
+
 ## Cobertura de requisitos
 
 | Requisito | Tarefas principais |
@@ -184,4 +198,6 @@ Este backlog deriva de [specs/weather-app-spec.md](../specs/weather-app-spec.md)
 | RF3 — Previsão de cinco dias | T-01, T-02, T-04, T-08, T-10, T-11, T-15, T-18, T-20, T-21 |
 | RF4 — Unidade de temperatura | T-02, T-08 a T-10, T-14 a T-16, T-19 |
 | RF5 — Estados e recuperação | T-03 a T-07, T-11, T-12, T-17, T-20, T-22 |
+| RF6 — Cidades predefinidas e identidade | T-24 |
+| RF7 — Previsão horária e recomendação | T-25 |
 | RNFs — Performance, responsividade, acessibilidade, resiliência, publicação, localização e qualidade | T-01, T-03 a T-23, conforme critérios de cada tarefa |

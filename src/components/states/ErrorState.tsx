@@ -8,15 +8,15 @@ interface ErrorStateProps {
 export default function ErrorState({ message, context, onRetry }: ErrorStateProps) {
   return (
     <div role="alert" className="flex flex-col items-center gap-4 py-16 text-center">
-      <span aria-hidden="true" className="text-4xl">
+      <span aria-hidden="true" className="text-4xl text-coral">
         ⚠️
       </span>
       {context && <p className="font-semibold">{context}</p>}
-      <p className="text-white/80">{message}</p>
+      <p className="text-ink-700">{message}</p>
       <button
         type="button"
         onClick={onRetry}
-        className="rounded-lg bg-accent-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-accent-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+        className="rounded-lg bg-accent-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-accent-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-600"
       >
         Tentar novamente
       </button>

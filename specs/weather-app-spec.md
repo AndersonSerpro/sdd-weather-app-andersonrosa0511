@@ -11,6 +11,8 @@ Aplicação web de página única para consultar rapidamente o clima de uma cida
 - **RF3 — Previsão de cinco dias:** exibir hoje e os quatro dias seguintes, com temperatura mínima e máxima, condição meteorológica, precipitação e velocidade máxima do vento para cada dia.
 - **RF4 — Unidade de temperatura:** permitir alternar entre Celsius e Fahrenheit e atualizar todos os valores de temperatura apresentados sem buscar os dados novamente.
 - **RF5 — Estados e recuperação:** informar os estados inicial/vazio, carregamento e erro; em falhas recuperáveis, oferecer uma ação para tentar novamente.
+- **RF6 — Cidades predefinidas e identidade:** apresentar a marca “Qual é o tempo?” e oferecer seleção direta de Curitiba, Maringá e Matinhos, no Paraná, para carregar suas condições e previsão.
+- **RF7 — Previsão por hora e recomendação:** exibir a previsão horária do dia local e destacar uma sugestão prática baseada nas próximas três horas.
 
 ## User Stories
 
@@ -20,6 +22,8 @@ Aplicação web de página única para consultar rapidamente o clima de uma cida
 - **US4 — Planejamento:** Como viajante planejador, quero consultar a previsão de hoje e dos quatro dias seguintes para organizar meus planos.
 - **US5 — Unidade familiar:** Como decisor do dia a dia, quero alternar entre Celsius e Fahrenheit para interpretar as temperaturas na unidade que conheço.
 - **US6 — Recuperação:** Como viajante planejador, quero receber uma mensagem clara e poder tentar novamente quando a busca ou a previsão falhar.
+- **US7 — Atalho para cidades do Paraná:** Como pessoa que consulta o clima local, quero escolher Curitiba, Maringá ou Matinhos com um botão para ver a previsão sem digitar uma busca.
+- **US8 — Planejamento por hora:** Como pessoa que planeja o dia, quero acompanhar a previsão por horário e receber uma sugestão destacada para me preparar para chuva, sol forte ou frio.
 
 ## Acceptance Criteria
 
@@ -54,6 +58,21 @@ Os critérios usam o formato Dado / Quando / Então e podem ser verificados manu
 - **Dado** que a API retorna erro ou a conexão falha, **quando** a operação não pode ser concluída, **então** a interface apresenta uma mensagem compreensível e uma ação para tentar novamente.
 - **Dado** que a busca é concluída sem cidades correspondentes, **quando** os resultados são apresentados, **então** a interface informa que nenhuma cidade foi encontrada.
 
+### RF6 — Cidades predefinidas e identidade
+
+- **Dado** que a aplicação é apresentada, **quando** a pessoa identifica a marca, **então** o nome visível é “Qual é o tempo?”.
+- **Dado** que os atalhos de cidades estão disponíveis, **quando** a pessoa ativa Curitiba, Maringá ou Matinhos, **então** a previsão da cidade escolhida é carregada diretamente sem uma requisição de geocoding.
+- **Dado** que a pessoa usa somente teclado, **quando** navega pelos atalhos, **então** cada cidade pode receber foco e ser selecionada com Enter ou Espaço.
+
+### RF7 — Previsão por hora e recomendação
+
+- **Dado** que uma cidade foi selecionada, **quando** a previsão é carregada, **então** a tela apresenta os horários disponíveis do dia local com hora, condição, temperatura e probabilidade de chuva.
+- **Dado** que um campo horário esteja ausente, **quando** os outros dados são exibidos, **então** esse campo usa um marcador neutro sem ocultar as demais horas.
+- **Dado** que há previsão para as próximas três horas, **quando** uma delas indicar probabilidade de chuva de pelo menos 50%, **então** a recomendação destacada orienta a levar guarda-chuva.
+- **Dado** que não há o alerta de chuva, **quando** alguma das próximas três horas indicar índice UV de pelo menos 6, **então** a recomendação destacada alerta sobre sol forte e protetor solar.
+- **Dado** que não há alertas de chuva ou UV, **quando** alguma das próximas três horas indicar temperatura de no máximo 10 °C, **então** a recomendação destacada orienta levar uma japona.
+- **Dado** que nenhuma condição de alerta ocorre, **quando** a recomendação é exibida, **então** a interface informa que não há alerta importante nas próximas horas.
+
 ## Non-Functional Requirements
 
 - **Performance:** a interface inicial deve ficar utilizável em menos de 2 segundos em uma conexão típica; durante operações de rede, deve fornecer feedback de carregamento.
@@ -62,6 +81,7 @@ Os critérios usam o formato Dado / Quando / Então e podem ser verificados manu
 - **Resiliência:** falhas de rede, respostas inválidas ou indisponibilidade da API não devem travar a interface; mensagens de erro devem permitir uma nova tentativa quando aplicável.
 - **Publicação:** usar Open-Meteo sem chave de API ou segredo no cliente e permitir publicação como aplicação estática.
 - **Idioma e localização:** textos da interface em pt-BR; datas e números devem ser apresentados em formato apropriado ao idioma e à localização da cidade.
+- **Recomendação:** avaliar as próximas três horas na timezone da cidade; priorizar chuva (probabilidade ≥50%), depois UV (≥6), depois frio (temperatura ≤10 °C), com mensagem neutra quando não houver alerta.
 - **Qualidade:** lint, build, testes unitários e testes E2E devem poder ser executados no projeto.
 
 ## Edge Cases
@@ -77,6 +97,8 @@ Os critérios usam o formato Dado / Quando / Então e podem ser verificados manu
 | Conexão lenta ou requisição que excede o tempo de espera | Manter indicação de carregamento enquanto aplicável; ao falhar, apresentar erro recuperável sem bloquear novas interações. |
 | Resposta parcial com campo atual ou diário ausente | Exibir os dados disponíveis e um marcador neutro no campo ausente; não quebrar o layout. |
 | Alternância de unidade antes da conclusão do carregamento | Preservar a unidade escolhida e aplicá-la aos dados quando forem exibidos. |
+| Seleção de cidade predefinida | Carregar a cidade e coordenadas correspondentes sem passar pela busca ou selecionar outro resultado. |
+| Resposta horária incompleta | Manter os horários e campos disponíveis e indicar os valores ausentes sem interromper o clima atual ou a previsão diária. |
 
 ## Assumptions
 
@@ -102,7 +124,7 @@ Os critérios usam o formato Dado / Quando / Então e podem ser verificados manu
 - Favoritos, histórico de buscas ou persistência de cidades.
 - Solicitação automática de geolocalização.
 - Idiomas além de pt-BR.
-- Previsões horárias detalhadas, alertas, notificações push ou recomendações personalizadas.
+- Alertas, notificações push ou recomendações personalizadas além das regras locais e explicáveis de RF7.
 - Uso offline ou garantia de dados meteorológicos atualizados sem conexão.
 
 ## Open Questions
@@ -119,3 +141,5 @@ Não há questões bloqueantes para a primeira versão. Fonte de dados, interval
 | US4 | RF3 |
 | US5 | RF4 |
 | US6 | RF5 |
+| US7 | RF6 |
+| US8 | RF7 |

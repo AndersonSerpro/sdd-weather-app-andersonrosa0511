@@ -1,4 +1,10 @@
-import type { City, CurrentWeather, ForecastDay, WeatherData } from '../types/weather';
+import type {
+  City,
+  CurrentWeather,
+  ForecastDay,
+  HourlyForecast,
+  WeatherData,
+} from '../types/weather';
 
 const GEOCODING_URL = 'https://geocoding-api.open-meteo.com/v1/search';
 const FORECAST_URL = 'https://api.open-meteo.com/v1/forecast';
@@ -161,6 +167,28 @@ function mapForecast(d: NonNullable<ForecastResponse['daily']>): ForecastDay[] {
   }));
 }
 
+function hourlyValue(values: unknown, index: number): number | null {
+  return Array.isArray(values) ? asNullableNumber(values[index]) : null;
+}
+
+function mapHourly(value: unknown, date: string): HourlyForecast[] {
+  if (!isRecord(value) || !Array.isArray(value.time)) return [];
+
+  return value.time.flatMap((time, index) => {
+    if (typeof time !== 'string' || !time.startsWith(`${date}T`)) return [];
+
+    return [
+      {
+        time,
+        temperature: hourlyValue(value.temperature_2m, index),
+        weatherCode: hourlyValue(value.weather_code, index),
+        precipitationProbability: hourlyValue(value.precipitation_probability, index),
+        uvIndex: hourlyValue(value.uv_index, index),
+      },
+    ];
+  });
+}
+
 /**
  * Busca o clima atual e a previsão de 5 dias para uma cidade.
  * Temperaturas retornam em Celsius (conversão fica na UI).
@@ -173,6 +201,7 @@ export async function getWeather(city: City): Promise<WeatherData> {
       'temperature_2m,relative_humidity_2m,wind_speed_10m,surface_pressure,precipitation,weather_code',
     daily:
       'weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,wind_speed_10m_max',
+    hourly: 'temperature_2m,weather_code,precipitation_probability,uv_index',
     forecast_days: '5',
     timezone: 'auto',
   });
@@ -203,5 +232,6 @@ export async function getWeather(city: City): Promise<WeatherData> {
     city,
     current: mapCurrent(current),
     forecast: mapForecast(daily),
+    hourly: mapHourly(rawData.hourly, daily.time[0]),
   };
 }

@@ -140,6 +140,13 @@ describe('weatherService', () => {
             temperature_2m_min: [12, 11, 13, 14, 15],
             precipitation_probability_max: [20, 90, 70, 10, null],
           },
+          hourly: {
+            time: ['2026-06-15T23:00', '2026-06-16T00:00', '2026-06-16T12:00', '2026-06-17T00:00'],
+            temperature_2m: [17, 15, 20, 16],
+            weather_code: [3, 0, 1, 3],
+            precipitation_probability: [10, 0, 20, 40],
+            uv_index: [0, 0, 7, 0],
+          },
         }),
       );
 
@@ -148,9 +155,28 @@ describe('weatherService', () => {
       expect(data.forecast).toHaveLength(5);
       expect(data.forecast[4].precipitationProbability).toBeNull();
       expect(data.forecast[0].windSpeedMax).toBeNull();
+      expect(data.hourly).toEqual([
+        {
+          time: '2026-06-16T00:00',
+          temperature: 15,
+          weatherCode: 0,
+          precipitationProbability: 0,
+          uvIndex: 0,
+        },
+        {
+          time: '2026-06-16T12:00',
+          temperature: 20,
+          weatherCode: 1,
+          precipitationProbability: 20,
+          uvIndex: 7,
+        },
+      ]);
       expect(
         new URL(String(vi.mocked(fetch).mock.calls[0][0])).searchParams.get('daily'),
       ).toContain('wind_speed_10m_max');
+      expect(
+        new URL(String(vi.mocked(fetch).mock.calls[0][0])).searchParams.get('hourly'),
+      ).toContain('uv_index');
     });
 
     it('preserva campos ausentes como indisponíveis em uma resposta parcial', async () => {
@@ -161,6 +187,10 @@ describe('weatherService', () => {
           daily: {
             time: ['2026-06-16', '2026-06-17', '2026-06-18', '2026-06-19', '2026-06-20'],
             temperature_2m_max: [24],
+          },
+          hourly: {
+            time: ['2026-06-16T08:00', '2026-06-16T09:00'],
+            temperature_2m: [null],
           },
         }),
       );
@@ -177,6 +207,22 @@ describe('weatherService', () => {
         precipitationProbability: null,
         windSpeedMax: null,
       });
+      expect(data.hourly).toEqual([
+        {
+          time: '2026-06-16T08:00',
+          temperature: null,
+          weatherCode: null,
+          precipitationProbability: null,
+          uvIndex: null,
+        },
+        {
+          time: '2026-06-16T09:00',
+          temperature: null,
+          weatherCode: null,
+          precipitationProbability: null,
+          uvIndex: null,
+        },
+      ]);
     });
 
     it('lança erro quando a resposta está incompleta', async () => {

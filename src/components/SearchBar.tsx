@@ -32,8 +32,8 @@ export default function SearchBar({
   return (
     <div className="w-full max-w-md">
       <form role="search" onSubmit={handleSubmit}>
-        <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 backdrop-blur-md focus-within:border-accent-500 focus-within:outline focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-accent-400">
-          <span aria-hidden="true" className="text-white/50">
+        <div className="flex items-center gap-2 rounded-xl border border-ink-900/15 bg-white/75 px-3 py-2 shadow-sm backdrop-blur-md focus-within:border-accent-500 focus-within:outline focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-accent-400">
+          <span aria-hidden="true" className="text-ink-400">
             🔍
           </span>
           <label htmlFor="city-search" className="sr-only">
@@ -47,7 +47,7 @@ export default function SearchBar({
             placeholder="Buscar cidade…"
             autoComplete="off"
             disabled={disabled}
-            className="min-w-0 flex-1 bg-transparent text-white placeholder-white/70 outline-none"
+            className="min-w-0 flex-1 bg-transparent text-ink-900 placeholder:text-ink-400 outline-none"
           />
           <button
             type="submit"
@@ -72,10 +72,10 @@ export default function SearchBar({
                   aria-label={accessibleName}
                   onClick={() => onSelectCity(city)}
                   disabled={disabled}
-                  className="w-full rounded-lg px-3 py-2 text-left text-white hover:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-400 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="w-full rounded-lg px-3 py-2 text-left text-ink-900 hover:bg-accent-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-500 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   <span className="font-medium">{city.name}</span>
-                  <span className="ml-2 text-sm text-white/60">{location}</span>
+                  <span className="ml-2 text-sm text-ink-500">{location}</span>
                 </button>
               </li>
             );
