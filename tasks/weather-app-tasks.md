@@ -184,9 +184,16 @@ Este backlog deriva de [specs/weather-app-spec.md](../specs/weather-app-spec.md)
 
 ### T-25 — Exibir previsão horária e sugestão prática
 - **Descrição:** Solicitar e mapear as horas do dia local na Open-Meteo, exibi-las em um quadro acessível e destacar uma recomendação baseada nas próximas três horas.
-- **Critérios de aceite:** A série horária é filtrada pela data local da cidade; cada linha mostra hora, condição, temperatura e probabilidade de chuva; dados parciais exibem marcador neutro; a sugestão respeita a prioridade chuva ≥50%, UV ≥6, temperatura ≤10 °C e fallback neutro; testes cobrem limites e os casos de recomendação.
+- **Critérios de aceite:** A série horária é filtrada pela data local da cidade e não mostra horários anteriores ao `current.time`; cada linha mostra hora, condição, temperatura e probabilidade de chuva; dados parciais exibem marcador neutro; a sugestão respeita a prioridade chuva ≥50%, UV ≥6, temperatura ≤10 °C e fallback neutro; testes cobrem limites e os casos de recomendação.
 - **Dependências:** T-04, T-10, T-24.
 - **Arquivos prováveis:** `src/services/weatherService.ts`, `src/types/weather.ts`, `src/components/HourlyForecast.tsx`, `src/components/WeatherSuggestion.tsx`, `src/lib/weatherSuggestion.ts`, `tests/unit/weatherService.test.ts`, `tests/unit/weatherSuggestion.test.ts`, `tests/unit/App.test.tsx`, `tests/e2e/weather.spec.ts`.
+- **Tipo:** UI/Data/Test
+
+### T-26 — Gerenciar cidades predefinidas
+- **Descrição:** Permitir salvar resultados de busca como atalhos, impedir duplicidades e remover qualquer cidade predefinida; manter a lista no armazenamento local do navegador.
+- **Critérios de aceite:** Cada resultado não salvo oferece ação acessível para adicionar; a lista é persistida em `localStorage`; cidades já salvas não são adicionadas novamente; cada atalho oferece ação acessível para remover; alterações persistem após recarregar e não afetam a seleção nem a previsão.
+- **Dependências:** T-06, T-24.
+- **Arquivos prováveis:** `src/App.tsx`, `src/components/SearchBar.tsx`, `tests/unit/App.test.tsx`, `tests/e2e/weather.spec.ts`.
 - **Tipo:** UI/Data/Test
 
 ## Cobertura de requisitos
@@ -199,5 +206,7 @@ Este backlog deriva de [specs/weather-app-spec.md](../specs/weather-app-spec.md)
 | RF4 — Unidade de temperatura | T-02, T-08 a T-10, T-14 a T-16, T-19 |
 | RF5 — Estados e recuperação | T-03 a T-07, T-11, T-12, T-17, T-20, T-22 |
 | RF6 — Cidades predefinidas e identidade | T-24 |
+| RF7 — Previsão horária e recomendação | T-25 |
+| RF6 — Cidades predefinidas e identidade | T-24, T-26 |
 | RF7 — Previsão horária e recomendação | T-25 |
 | RNFs — Performance, responsividade, acessibilidade, resiliência, publicação, localização e qualidade | T-01, T-03 a T-23, conforme critérios de cada tarefa |

@@ -22,7 +22,7 @@ const hourly: HourlyForecastData[] = [
 
 describe('HourlyForecast', () => {
   it('mostra horas, condição, temperatura e precipitação em tabela acessível', () => {
-    render(<HourlyForecast hourly={hourly} unit="celsius" />);
+    render(<HourlyForecast hourly={hourly} currentTime="2026-06-16T08:00" unit="celsius" />);
 
     const table = screen.getByRole('table', {
       name: 'Condições previstas para cada hora de hoje',
@@ -35,14 +35,29 @@ describe('HourlyForecast', () => {
   });
 
   it('converte a temperatura horária para Fahrenheit', () => {
-    render(<HourlyForecast hourly={hourly} unit="fahrenheit" />);
+    render(<HourlyForecast hourly={hourly} currentTime="2026-06-16T08:00" unit="fahrenheit" />);
 
     expect(screen.getByRole('row', { name: /08:00/ })).toHaveTextContent('59°');
   });
 
   it('informa quando a série horária está indisponível', () => {
-    render(<HourlyForecast hourly={[]} unit="celsius" />);
+    render(<HourlyForecast hourly={[]} currentTime="2026-06-16T08:00" unit="celsius" />);
 
     expect(screen.getByRole('status')).toHaveTextContent('Previsão por hora indisponível.');
+  });
+
+  it('esconde horários anteriores ao horário local atual', () => {
+    render(<HourlyForecast hourly={hourly} currentTime="2026-06-16T08:30" unit="celsius" />);
+
+    expect(screen.queryByRole('row', { name: /08:00/ })).not.toBeInTheDocument();
+    expect(screen.getByRole('row', { name: /09:00/ })).toBeVisible();
+  });
+
+  it('informa quando todos os horários de hoje já passaram', () => {
+    render(<HourlyForecast hourly={hourly} currentTime="2026-06-16T10:00" unit="celsius" />);
+
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'Não há mais horários previstos para hoje.',
+    );
   });
 });

@@ -171,6 +171,7 @@ Referências: RF1–RF3, RF5; RNF de resiliência e publicação.
 Manter o estado do domínio de busca em `useWeather`, conforme o padrão atual, sem biblioteca externa. Estado conceitual: `status` (`idle | loading | success | error | empty`), `query`, `cities`, `selectedCity`, `data` e `error`. Separar a lista de resultados da cidade selecionada: resultados não implicam seleção e não disparam forecast até uma escolha explícita (RF1). `retry` repete geocoding quando a busca falhou ou forecast para a cidade escolhida.
 
 Os atalhos usam uma lista constante de `City` com coordenadas fixas para Curitiba (-25.4284, -49.2733), Maringá (-23.4205, -51.9333) e Matinhos (-25.8176, -48.5428); selecionar um atalho chama `selectCity` diretamente.
+Inicializar a lista de atalhos com Curitiba, Maringá e Matinhos e mesclar os valores válidos de `localStorage`. Resultados de busca podem ser salvos na lista sem duplicar por `City.id`; cada atalho pode ser removido, e a lista atualizada é persistida no navegador. Não há sincronização com servidor.
 Derivar a recomendação das três primeiras horas ainda futuras (comparadas lexicograficamente na timezone local). Aplicar a ordem: chuva com probabilidade ≥50%, UV ≥6, temperatura ≤10 °C; sem condição, exibir a mensagem neutra. A recomendação não é estado persistido nem substitui os dados por hora.
 
 Manter `Unit` como estado local da composição da UI, inicialmente Celsius, e derivar todos os valores apresentados a partir dos dados Celsius existentes. Isso cobre alternância inclusive durante carregamento, sem nova requisição (RF4). Não persistir cidade, unidade ou histórico; persistência está fora do escopo da v1.
@@ -204,6 +205,8 @@ Usar `pnpm test` (Vitest) para unitários e componentes, `pnpm test:e2e` (Playwr
 - `useWeather`/`App` e componentes: estado inicial, loading, vazio e erro; vários resultados sem auto-seleção; seleção explícita; retry da busca e do forecast; alternância de unidade sem nova chamada de rede; acessibilidade básica por role/label e teclado.
 - `App`: marca “Qual é o tempo?”; cada atalho seleciona a cidade correta e chama forecast sem geocoding.
 - `HourlyForecast`: valida seleção do dia local, tabela acessível, métricas parciais e limite de horas.
+- `HourlyForecast`: valida seleção do dia local, tabela acessível, métricas parciais e ocultação de horas anteriores ao horário local atual.
+- `App`: adicionar cidade pesquisada às predefinidas, evitar duplicidade, remover atalho e confirmar persistência entre montagens/reloads.
 - `weatherSuggestion`: testa os limiares e a prioridade entre chuva, UV, frio e fallback neutro.
 
 **Playwright:**
@@ -214,6 +217,7 @@ Usar `pnpm test` (Vitest) para unitários e componentes, `pnpm test:e2e` (Playwr
 - Consulta vazia e resultados parciais sem quebra da tela.
 - Seleção de cada cidade predefinida, sem uma requisição de geocoding adicional.
 - Previsão por hora para a data local, recomendação adequada aos próximos dados e ausência de alerta.
+- Previsão por hora sem linhas de horários já passados.
 - Layout e operação dos controles em 320 px e em viewport desktop, sem rolagem horizontal; navegação por teclado e foco visível.
 
 Interceptar as APIs nos E2E para resultados determinísticos, como os testes atuais já fazem; cobrir falhas e datasets parciais por fixtures. Executar os gates do projeto: `pnpm lint`, `pnpm build` e `pnpm test`; `pnpm test:e2e` complementa a validação de jornada.

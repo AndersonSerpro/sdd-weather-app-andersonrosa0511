@@ -63,10 +63,16 @@ Os critérios usam o formato Dado / Quando / Então e podem ser verificados manu
 - **Dado** que a aplicação é apresentada, **quando** a pessoa identifica a marca, **então** o nome visível é “Qual é o tempo?”.
 - **Dado** que os atalhos de cidades estão disponíveis, **quando** a pessoa ativa Curitiba, Maringá ou Matinhos, **então** a previsão da cidade escolhida é carregada diretamente sem uma requisição de geocoding.
 - **Dado** que a pessoa usa somente teclado, **quando** navega pelos atalhos, **então** cada cidade pode receber foco e ser selecionada com Enter ou Espaço.
+- **Dado** que resultados de busca estão visíveis, **quando** a pessoa adiciona um resultado às cidades predefinidas, **então** ele aparece como atalho sem duplicar cidades existentes e permanece salvo no navegador.
+- **Dado** que cidades predefinidas estão visíveis, **quando** a pessoa remove uma delas, **então** o atalho desaparece e continua removido após recarregar a aplicação.
+- **Dado** que resultados de busca estão visíveis, **quando** a pessoa adiciona um resultado às cidades predefinidas, **então** ele aparece como atalho sem duplicar cidades existentes e permanece salvo no navegador.
+- **Dado** que cidades predefinidas estão visíveis, **quando** a pessoa remove uma delas, **então** o atalho desaparece e continua removido após recarregar a aplicação.
 
 ### RF7 — Previsão por hora e recomendação
 
 - **Dado** que uma cidade foi selecionada, **quando** a previsão é carregada, **então** a tela apresenta os horários disponíveis do dia local com hora, condição, temperatura e probabilidade de chuva.
+- **Dado** que uma cidade foi selecionada, **quando** a previsão é carregada, **então** a tela apresenta apenas os horários ainda não passados do dia local com hora, condição, temperatura e probabilidade de chuva.
+- **Dado** que uma cidade foi selecionada, **quando** a previsão é carregada, **então** a tela apresenta apenas os horários ainda não passados do dia local com hora, condição, temperatura e probabilidade de chuva.
 - **Dado** que um campo horário esteja ausente, **quando** os outros dados são exibidos, **então** esse campo usa um marcador neutro sem ocultar as demais horas.
 - **Dado** que há previsão para as próximas três horas, **quando** uma delas indicar probabilidade de chuva de pelo menos 50%, **então** a recomendação destacada orienta a levar guarda-chuva.
 - **Dado** que não há o alerta de chuva, **quando** alguma das próximas três horas indicar índice UV de pelo menos 6, **então** a recomendação destacada alerta sobre sol forte e protetor solar.
@@ -99,6 +105,11 @@ Os critérios usam o formato Dado / Quando / Então e podem ser verificados manu
 | Alternância de unidade antes da conclusão do carregamento | Preservar a unidade escolhida e aplicá-la aos dados quando forem exibidos. |
 | Seleção de cidade predefinida | Carregar a cidade e coordenadas correspondentes sem passar pela busca ou selecionar outro resultado. |
 | Resposta horária incompleta | Manter os horários e campos disponíveis e indicar os valores ausentes sem interromper o clima atual ou a previsão diária. |
+| Adicionar a mesma cidade predefinida mais de uma vez | Manter apenas um atalho para essa cidade. |
+| Remover cidade predefinida e recarregar a página | Manter a cidade removida da lista de atalhos. |
+| Remover cidade predefinida e recarregar a página | Manter a cidade removida da lista de atalhos. |
+- **Persistência local:** cidades predefinidas adicionadas/removidas são salvas no navegador, sem conta ou armazenamento no servidor.
+- **Publicação:** usar Open-Meteo sem chave de API ou segredo no cliente e permitir publicação como aplicação estática.
 
 ## Assumptions
 
@@ -122,6 +133,7 @@ Os critérios usam o formato Dado / Quando / Então e podem ser verificados manu
 
 - Login, contas de usuário ou sincronização entre dispositivos.
 - Favoritos, histórico de buscas ou persistência de cidades.
+- Favoritos e histórico de buscas.
 - Solicitação automática de geolocalização.
 - Idiomas além de pt-BR.
 - Alertas, notificações push ou recomendações personalizadas além das regras locais e explicáveis de RF7.

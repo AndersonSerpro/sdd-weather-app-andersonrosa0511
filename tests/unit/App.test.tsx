@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import App from '../../src/App';
@@ -59,6 +59,7 @@ const weather: WeatherData = {
 describe('App', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    window.localStorage.clear();
   });
 
   it('renderiza a marca e o estado inicial vazio', () => {
@@ -71,6 +72,61 @@ describe('App', () => {
     render(<App />);
     expect(screen.getByLabelText(/buscar cidade/i)).toBeInTheDocument();
     expect(screen.getByRole('group', { name: /unidade de temperatura/i })).toBeInTheDocument();
+  });
+
+  it('salva uma cidade pesquisada sem duplicar e mantém o atalho após remontar', async () => {
+    const user = userEvent.setup();
+    const searchedCity = { ...city, id: 501, name: 'Londres', country: 'Reino Unido' };
+    vi.mocked(searchCities).mockResolvedValue([searchedCity]);
+    const { unmount } = render(<App />);
+
+    await user.type(screen.getByRole('textbox', { name: /buscar cidade/i }), 'Londres');
+    await user.click(screen.getByRole('button', { name: 'Buscar' }));
+    await user.click(
+      await screen.findByRole('button', {
+        name: 'Adicionar Londres às cidades predefinidas',
+      }),
+    );
+
+    expect(
+      screen.getByRole('button', { name: 'Ver previsão de Londres, Reino Unido' }),
+    ).toBeVisible();
+    expect(
+      screen.queryByRole('button', { name: 'Adicionar Londres às cidades predefinidas' }),
+    ).not.toBeInTheDocument();
+    await user.clear(screen.getByRole('textbox', { name: /buscar cidade/i }));
+    await user.type(screen.getByRole('textbox', { name: /buscar cidade/i }), 'Londres');
+    await user.click(screen.getByRole('button', { name: 'Buscar' }));
+    expect(await screen.findByText('Adicionada')).toBeVisible();
+    expect(
+      screen.getAllByRole('button', { name: 'Ver previsão de Londres, Reino Unido' }),
+    ).toHaveLength(1);
+    expect(
+      JSON.parse(window.localStorage.getItem('weather-app:preset-cities') ?? '[]'),
+    ).toContainEqual(searchedCity);
+
+    unmount();
+    render(<App />);
+    expect(
+      screen.getByRole('button', { name: 'Ver previsão de Londres, Reino Unido' }),
+    ).toBeVisible();
+  });
+
+  it('remove uma cidade predefinida e persiste a remoção', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(
+      screen.getByRole('button', { name: 'Remover Curitiba das cidades predefinidas' }),
+    );
+
+    expect(
+      screen.queryByRole('button', { name: 'Ver previsão de Curitiba, Paraná' }),
+    ).not.toBeInTheDocument();
+    const savedCities = JSON.parse(
+      window.localStorage.getItem('weather-app:preset-cities') ?? '[]',
+    ) as City[];
+    expect(savedCities.some((preset) => preset.name === 'Curitiba')).toBe(false);
   });
 
   it('destaca a sugestão e mostra a previsão por hora em tabela acessível', async () => {
@@ -152,7 +208,9 @@ describe('App', () => {
     await user.keyboard('{Enter}');
 
     expect(await screen.findByRole('region', { name: 'Clima atual' })).toHaveTextContent('Lisboa');
-    expect(screen.getAllByRole('listitem')).toHaveLength(5);
+    expect(
+      within(screen.getByRole('region', { name: /previsão de 5 dias/i })).getAllByRole('listitem'),
+    ).toHaveLength(5);
     expect(getWeather).toHaveBeenCalledWith(city);
     expect(screen.getByRole('group', { name: /unidade de temperatura/i })).toBeInTheDocument();
   });

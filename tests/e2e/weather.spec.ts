@@ -91,7 +91,9 @@ test('fluxo completo: buscar → clima atual → previsão → trocar unidade', 
   expect(getForecastRequests()).toBe(1);
   const hourlyRegion = page.getByRole('region', { name: 'Previsão de hoje por horário' });
   await expect(hourlyRegion.getByRole('table')).toBeVisible();
-  await expect(hourlyRegion.getByRole('row')).toHaveCount(6);
+  await expect(hourlyRegion.getByRole('row')).toHaveCount(5);
+  await expect(hourlyRegion.getByRole('row', { name: /11:00/ })).toHaveCount(0);
+  await expect(hourlyRegion.getByRole('row', { name: /12:00/ })).toBeVisible();
   await expect(page.getByRole('status')).toContainText('Leve o guarda-chuva');
 
   // 0°C exibido; após trocar para °F deve virar 32°.
@@ -137,6 +139,31 @@ test('atalhos carregam as cidades do Paraná sem geocoding', async ({ page }) =>
   }
 
   expect(geocodingRequests).toBe(0);
+});
+
+test('salva cidade pesquisada, evita duplicata e persiste sua remoção', async ({ page }) => {
+  await mockApis(page);
+  await page.goto('/');
+
+  await page.getByLabel(/buscar cidade/i).fill('Seattle');
+  await page.getByRole('button', { name: /buscar/i }).click();
+  await page.getByRole('button', { name: 'Adicionar Seattle às cidades predefinidas' }).click();
+
+  const savedCity = page.getByRole('button', { name: 'Ver previsão de Seattle, Washington' });
+  await expect(savedCity).toBeVisible();
+  await expect(page.getByText('Adicionada')).toBeVisible();
+
+  await page.reload();
+  await expect(
+    page.getByRole('button', { name: 'Ver previsão de Seattle, Washington' }),
+  ).toBeVisible();
+  await page.getByRole('button', { name: 'Remover Seattle das cidades predefinidas' }).click();
+  await expect(
+    page.getByRole('button', { name: 'Ver previsão de Seattle, Washington' }),
+  ).toHaveCount(0);
+
+  await page.reload();
+  await expect(page.getByText('Nenhuma cidade predefinida.')).toBeVisible();
 });
 
 test('viewport mobile renderiza o fluxo principal', async ({ page }) => {
